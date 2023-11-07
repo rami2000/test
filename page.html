@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>تتبع جمع الحليب</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: right;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        td:first-child {
+            font-weight: bold;
+        }
+
+        td {
+            min-width: 120px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>تتبع جمع الحليب</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>الاسم</th>
+                <th>التاريخ</th>
+                <th>كمية الحليب (باللتر)</th>
+                <th>سعر الحليب (للتر) في التونسي (TND)</th>
+                <th>الإجمالي المكتسب (TND)</th>
+                <th>المبلغ المدفوع (TND)</th>
+                <th>الدين (TND)</th>
+                <th>المبلغ النهائي (TND)</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr>
+                <td contenteditable="true"></td>
+                <td contenteditable="false" id="dateCell"></td>
+                <td contenteditable="true"></td>
+                <td>1.360 TND</td>
+                <td></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div>
+        <button onclick="addRow()">إضافة</button>
+        <button onclick="saveToTextFile()">حفظ إلى ملف نصي</button>
+    </div>
+
+    <script>
+        // Set the date in the initial row
+        const dateCell = document.querySelector('#dateCell');
+        const currentDate = new Date().toISOString().split('T')[0];
+        dateCell.textContent = currentDate;
+
+        // Calculate and update the total earnings and final amount when content changes in the table cells
+        document.querySelector('table').addEventListener('input', function (e) {
+            const target = e.target;
+            const rowIndex = target.parentElement.rowIndex;
+            if (rowIndex > 0) {
+                const cells = target.parentElement.cells;
+                const quantity = parseFloat(cells[2].textContent);
+                const price = 1.360; // Fixed price in TND
+                const moneyGiven = parseFloat(cells[5].textContent) || 0;
+                const debt = parseFloat(cells[6].textContent) || 0;
+
+                if (!isNaN(quantity)) {
+                    const totalEarnings = (quantity * price).toFixed(2);
+                    cells[4].textContent = totalEarnings + ' TND';
+
+                    const finalAmount = (quantity * price - moneyGiven - debt).toFixed(2);
+                    cells[7].textContent = finalAmount + ' TND';
+                }
+            }
+        });
+
+        function addRow() {
+            const table = document.querySelector('table');
+            const newRow = table.insertRow(-1);
+            newRow.innerHTML = `
+                <td contenteditable="true"></td>
+                <td contenteditable="false" id="dateCell"></td>
+                <td contenteditable="true"></td>
+                <td>1.360 TND</td>
+                <td></td>
+                <td contenteditable="true"></td>
+                <td contenteditable="true"></td>
+                <td></td>
+            `;
+
+            // Automatically fill the date cell with the current date
+            const newDateCell = newRow.querySelector('#dateCell');
+            newDateCell.textContent = currentDate;
+        }
+
+        function saveToTextFile() {
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            let textToSave = '';
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (index !== cells.length - 1) {
+                        textToSave += cell.textContent + '\t'; // Use tabs to separate columns
+                    } else {
+                        textToSave += cell.textContent + '\n'; // New line at the end of each row
+                    }
+                });
+            });
+
+            const blob = new Blob([textToSave], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = window.URL.createObjectURL(blob);
+            a.download = 'milk_data.txt'; // Set the filename to milk_data.txt
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Save the data automatically every 4 minutes
+        setInterval(function () {
+            saveToTextFile();
+        }, 4 * 60 * 1000); // 4 minutes
+    </script>
+</body>
+</html>
